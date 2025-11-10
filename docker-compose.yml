@@ -1,0 +1,50 @@
+services:
+  xerxes-bridge:
+    image: xerxes-bridge:v1.0.0-api-key
+    container_name: xerxes-bridge-xerxes-bridge-1
+    restart: unless-stopped
+    environment:
+      PROJECT_API_KEY: "Silne+1"
+      TB_HOST: "https://eu.thingsboard.cloud"
+      TB_TIMEOUT_S: "5"
+      TB_RETRIES: "2"
+      TB_BACKOFF_MS: "300"
+      TOKEN_MAP_PATH: "/app/token_map.json"
+      TS_META_FIELD: "meta"
+      TS_TIME_FIELD: "ts"
+      MONGO_URI: "mongodb://bridge:BRIDGE_STRONG_PASSWORD@mongo:27017/xerxes?authSource=xerxes"
+      MONGO_DB: "xerxes"
+      MONGO_COL: "measurements"
+      REJECT_SYNTHETIC: "1"
+    ports:
+      - "127.0.0.1:2080:8080"
+      - "127.0.0.1:28080:8080"
+    volumes:
+      - /opt/xerxes-bridge/token_map.json:/app/token_map.json:ro
+      - /opt/xerxes-bridge/app.py:/app/app.py:ro
+    networks: [ "mongo_default" ]
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8080/health').read() else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # stable front-door: host 127.0.0.1:28081 -> container xerxes-bridge:8080
+  bridge-proximity:
+    image: nginx:alpine
+    container_name: bridge-proxy
+    depends_on:
+      xerxes-bridge:
+        condition: service_healthy
+    volumes:
+      - /opt/xerxes-bridge/token_map.json:/app/token_map.json:ro
+      - /opt/xerxes-bridge/app.py:/app/app.py:ro
+    networks: [ "mongo_default" ]
+    ports:
+      - "127.0.0.1:28081:80"
+    restart: unless-stopped
+
+networks:
+  mongo_default:
+    external: true

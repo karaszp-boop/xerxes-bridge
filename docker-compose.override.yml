@@ -1,0 +1,8 @@
+services:
+  xerxes-bridge:
+    networks:
+      - mongo_default
+
+networks:
+  mongo_default:
+    external: true
