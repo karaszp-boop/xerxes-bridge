@@ -373,3 +373,47 @@ git remote add origin git@github.com:<tvoj-org>/xerxes-bridge.git && git push -u
 	•	Zostáva iba git push a (ak chceš) zapnúť aj xb_scrape.timer.
 
 Keď to odošleš do Git-u, daj vedieť – viem ešte pridať aj „TB tokens export“ helper a drobné gif/obrázky do ADMIN_GUIDE.md.
+# Xerxes Bridge – Admin Guide (v1.0.8+sync)
+
+## 10) Autonómny ThingsBoard Sync & JWT Refresh
+
+Od verzie **bridge-1.0.8+sync** systém podporuje plne autonómny chod:
+
+- automatické obnovovanie JWT tokenu pre ThingsBoard Cloud (refresh),
+- pravidelný prenos reálnych rámcov z MongoDB do TB,
+- kontinuálny health-check pre diagnostiku pripojenia.
+
+---
+
+### ⚙️ 1. Architektúra služieb
+
+| Služba / Timer | Účel | Interval | Logy |
+|-----------------|-------|-----------|------|
+| `refresh_jwt.service` | obnovuje TB token (JWT + refresh) | každých 6 hodín | `journalctl -u refresh_jwt.service` |
+| `xb_scrape.service` | prenáša dáta Mongo → ThingsBoard | každých 5 minút | `journalctl -u xb_scrape.service` |
+
+---
+
+### ⚙️ 2. Kľúčové súbory
+
+| Cesta | Popis |
+|-------|--------|
+| `/opt/xerxes-bridge/tb_jwt.env` | ThingsBoard tokeny (JWT + refresh) |
+| `/opt/xerxes-bridge/tb_local.env` | Mongo a ostatné systémové premenné |
+| `/opt/xerxes-bridge/refresh_jwt.sh` | Shell skript pre obnovu JWT |
+| `/etc/systemd/system/refresh_jwt.{service,timer}` | systemd jednotky pre auto-refresh |
+| `/etc/systemd/system/xb_scrape.{service,timer}` | systemd jednotky pre pravidelný sync |
+| `/opt/xerxes-bridge/tb_sync_from_mongo.py` | Hlavný sync skript Mongo → TB |
+| `/opt/xerxes-bridge/healthcheck_tb_v3.sh` | Diagnostický healthcheck skript |
+
+---
+
+### ⚙️ 3. Príklad `/opt/xerxes-bridge/tb_jwt.env`
+
+> ⚠️ **Upozornenie:**  
+> Žiadne `export`. Systemd načítava súbor ako čistý `KEY=VALUE`.
+
+```bash
+TB_BASE=https://eu.thingsboard.cloud
+TB_JWT=eyJhbGciOiJIUzUxMiJ9...
+TB_REFRESH=eyJhbGciOiJIUzUxMiJ9...
