@@ -1,10 +1,3 @@
-Dobre, poďme to upratať a doplniť „dnešok“ rozumne, nie živelne 😊
-Nižšie máš komplet zrevidovaný ADMIN_GUIDE.md – tak, ako by som ho videl v gite po dnešnom dni (Hetzner re-aktivácia, TB JWT refresh, tb_sync_from_mongo, repair skripty, duplicitné zariadenia v TB, atď.).
-
-Môžeš ho celý skopírovať do ADMIN_GUIDE.md v repo.
-
-⸻
-
 
 # Xerxes Bridge – Admin Guide (bridge-1.0.8+sync)
 
