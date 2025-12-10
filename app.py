@@ -251,8 +251,6 @@ async def ingest(body: IngestBody, request: Request):
     synthetic = (not is_real)
     # TS dokument
     doc = {"uuid": canon_uuid, TS_TIME_FIELD: ts_dt, "measurements": merged}
-
-    # base meta
     meta = body.meta.copy() if isinstance(body.meta, dict) else {}
     meta.setdefault("ingest", {})
     meta["ingest"].update({
@@ -263,20 +261,7 @@ async def ingest(body: IngestBody, request: Request):
         "uuid_canonical": str(canon_uuid),
         "origin": (request.headers.get("X-Bridge-Origin") or request.query_params.get("origin") or "device")
     })
-
-    # safe payload snapshot – neukladáme celé meta znova, ale len vybrané časti
-    clean_meta = body.meta.copy() if isinstance(body.meta, dict) else {}
-    payload_meta = {
-        "version": clean_meta.get("version"),
-        "modem": clean_meta.get("modem"),
-        "power": clean_meta.get("power"),
-    }
-
-    meta["payload"] = {
-        "meta": payload_meta,
-        "values": merged,  # spojené measurements/values
-    }
-
+    meta["payload"] = {"meta": body.meta, "values": body.values}
     doc[TS_META_FIELD] = meta
 
     # Synthetic → len devices.last_seen, bez insertu
